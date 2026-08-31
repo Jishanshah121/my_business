@@ -1,0 +1,28 @@
+CREATE TABLE `users` (
+    `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `uuid`               CHAR(36)     NOT NULL,
+    `customer_group_id`  BIGINT UNSIGNED NOT NULL,
+    `first_name`         VARCHAR(96)  NOT NULL,
+    `last_name`          VARCHAR(96)  NULL,
+    `email`              VARCHAR(191) NOT NULL,
+    `phone`              VARCHAR(20)  NULL COMMENT 'E.164 without +, e.g. 919876543210',
+    `password_hash`      VARCHAR(255) NOT NULL COMMENT 'Argon2id',
+    `status`             ENUM('pending','active','suspended','closed') NOT NULL DEFAULT 'pending',
+    `email_verified_at`  DATETIME NULL DEFAULT NULL,
+    `phone_verified_at`  DATETIME NULL DEFAULT NULL,
+    `last_login_at`      DATETIME NULL DEFAULT NULL,
+    `last_login_ip`      VARBINARY(16) NULL,
+    `marketing_opt_in`   TINYINT(1) NOT NULL DEFAULT 0,
+    `notes`              VARCHAR(500) NULL COMMENT 'Internal, staff-visible only',
+    `created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`         DATETIME NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_users_uuid` (`uuid`),
+    UNIQUE KEY `uq_users_email` (`email`),
+    UNIQUE KEY `uq_users_phone` (`phone`),
+    KEY `ix_users_group_status` (`customer_group_id`, `status`),
+    KEY `ix_users_created` (`created_at`),
+    CONSTRAINT `fk_users_customer_group`
+        FOREIGN KEY (`customer_group_id`) REFERENCES `customer_groups` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

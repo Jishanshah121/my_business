@@ -1,0 +1,381 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * SupplyKaro console.
+ *
+ * Runs with zero Composer dependencies so the database can be created,
+ * migrated and seeded on a fresh machine before anything else is installed.
+ *
+ *   php bin/console <command> [options]
+ */
+
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+
+if (PHP_VERSION_ID < 80200) {
+    fwrite(STDERR, "SupplyKaro requires PHP 8.2 or newer. Found " . PHP_VERSION . "\n");
+    exit(1);
+}
+
+$root = require dirname(__DIR__) . '/bootstrap/app.php';
+
+use App\Support\Config;
+use App\Support\Database;
+use Database\Migrator;
+use Database\Seeder;
+
+const C_RESET = "\033[0m";
+const C_DIM   = "\033[2m";
+const C_BOLD  = "\033[1m";
+const C_GREEN = "\033[32m";
+const C_RED   = "\033[31m";
+const C_AMBER = "\033[33m";
+const C_CYAN  = "\033[36m";
+
+function out(string $line = ''): void { fwrite(STDOUT, $line . "\n"); }
+function ok(string $line): void       { out(C_GREEN . '  ok  ' . C_RESET . $line); }
+function warn(string $line): void     { out(C_AMBER . ' warn ' . C_RESET . $line); }
+function fail(string $line): void     { fwrite(STDERR, C_RED . ' fail ' . C_RESET . $line . "\n"); }
+function head(string $line): void     { out("\n" . C_BOLD . $line . C_RESET); }
+function dim(string $line): void      { out(C_DIM . $line . C_RESET); }
+
+$argv = $_SERVER['argv'];
+$command = $argv[1] ?? 'list';
+$options = [];
+foreach (array_slice($argv, 2) as $arg) {
+    if (str_starts_with($arg, '--')) {
+        [$k, $v] = array_pad(explode('=', substr($arg, 2), 2), 2, true);
+        $options[$k] = $v;
+    }
+}
+
+try {
+    switch ($command) {
+
+        // ------------------------------------------------------------------
+        case 'key:generate':
+            $key = base64_encode(random_bytes(32));
+            $envFile = $root . '/.env';
+            $contents = file_get_contents($envFile) ?: '';
+            $contents = preg_replace('/^APP_KEY=.*$/m', 'APP_KEY=' . $key, $contents) ?? $contents;
+            file_put_contents($envFile, $contents);
+            ok('APP_KEY written to .env');
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:create':
+            $name = (string) Config::get('database.connections.mysql.database');
+            $charset = (string) Config::get('database.connections.mysql.charset', 'utf8mb4');
+            $collation = (string) Config::get('database.connections.mysql.collation', 'utf8mb4_0900_ai_ci');
+
+            $pdo = Database::serverConnection();
+            $pdo->exec(sprintf(
+                'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET %s COLLATE %s',
+                str_replace('`', '', $name),
+                $charset,
+                $collation
+            ));
+            ok("Database `{$name}` is ready ({$charset} / {$collation})");
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:grants':
+            // Prints the GRANT statements for the read-only AI user. We print
+            // rather than execute: creating database users is a privileged
+            // operation that belongs with whoever administers MySQL.
+            $db = (string) Config::get('database.connections.mysql.database');
+            $user = (string) Config::get('database.connections.readonly.username');
+            // Host defaults to '%'; pass --host=localhost for a local install,
+            // where MySQL resolves a 127.0.0.1 TCP connection as 'localhost'.
+            $host = isset($options['host']) ? (string) $options['host'] : '%';
+            $tables = [
+                'products', 'product_variants', 'variant_packs', 'categories', 'brands',
+                'tags', 'product_tags', 'attributes', 'attribute_values', 'product_attributes',
+                'product_images', 'product_associations', 'item_roles', 'item_role_products',
+                'occasions', 'occasion_products', 'business_types', 'business_type_products',
+                'event_rule_sets', 'event_rules',
+            ];
+            head("Read-only grants for the Python AI service");
+            dim("Run these as a MySQL administrator. No write grant is ever issued.");
+            out();
+            out("CREATE USER IF NOT EXISTS '{$user}'@'{$host}' IDENTIFIED BY '<password from DB_READONLY_PASSWORD>';");
+            // The three read-only views the AI service reads. Discovered from
+            // information_schema so a new view added in a migration is never
+            // silently left ungranted.
+            $views = Database::connection()->query(
+                'SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME'
+            )->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach (array_merge($tables, $views) as $object) {
+                out("GRANT SELECT ON `{$db}`.`{$object}` TO '{$user}'@'{$host}';");
+            }
+            out("FLUSH PRIVILEGES;");
+            out();
+            break;
+
+        // ------------------------------------------------------------------
+        case 'migrate':
+            $migrator = new Migrator();
+            $migrator->ensureRepository();
+
+            // Check for tampered migrations BEFORE the pending check — an
+            // edited-after-apply migration is exactly the case where nothing is
+            // pending, so checking only inside run() would never catch it.
+            $drifted = $migrator->drifted();
+            if ($drifted !== []) {
+                fail('Applied migrations were modified on disk:');
+                foreach ($drifted as $d) {
+                    out('         - ' . $d);
+                }
+                out();
+                warn('Create a new migration instead of editing an applied one.');
+                out();
+                exit(1);
+            }
+
+            $pending = $migrator->pending();
+            if ($pending === []) {
+                ok('Nothing to migrate — schema is up to date.');
+                break;
+            }
+
+            head(sprintf('Running %d migration%s', count($pending), count($pending) === 1 ? '' : 's'));
+            $start = microtime(true);
+            $migrator->run(static function (string $name, int $statements): void {
+                ok(sprintf('%-52s %s', $name, C_DIM . $statements . ' statements' . C_RESET));
+            });
+            printf("\n  %d migrations in %.2fs\n\n", count($pending), microtime(true) - $start);
+            break;
+
+        // ------------------------------------------------------------------
+        case 'migrate:status':
+            $migrator = new Migrator();
+            $migrator->ensureRepository();
+            $applied = $migrator->applied();
+
+            head('Migration status');
+            foreach ($migrator->files() as $file) {
+                if (isset($applied[$file])) {
+                    out(sprintf('  %s%-10s%s %-52s %s', C_GREEN, 'applied', C_RESET, $file,
+                        C_DIM . $applied[$file]['ran_at'] . C_RESET));
+                } else {
+                    out(sprintf('  %s%-10s%s %s', C_AMBER, 'pending', C_RESET, $file));
+                }
+            }
+
+            $drifted = $migrator->drifted();
+            if ($drifted !== []) {
+                out();
+                foreach ($drifted as $d) {
+                    warn($d);
+                }
+            }
+            out();
+            break;
+
+        // ------------------------------------------------------------------
+        case 'migrate:fresh':
+            if (Config::get('app.env') === 'production') {
+                fail('migrate:fresh is disabled when APP_ENV=production.');
+                exit(1);
+            }
+            if (!isset($options['force'])) {
+                warn('This DROPS every table in ' . Config::get('database.connections.mysql.database') . '.');
+                warn('Re-run with --force to confirm.');
+                exit(1);
+            }
+
+            $migrator = new Migrator();
+            $dropped = $migrator->fresh();
+            ok("Dropped {$dropped} tables/views");
+
+            $migrator->ensureRepository();
+            head('Re-running all migrations');
+            $migrator->run(static function (string $name, int $statements): void {
+                ok(sprintf('%-52s %s', $name, C_DIM . $statements . ' statements' . C_RESET));
+            });
+            out();
+
+            if (isset($options['seed'])) {
+                runSeeders($root, $options);
+            }
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:seed':
+            runSeeders($root, $options);
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:wipe-demo':
+            // Removes every row the demo seeders created, leaving reference
+            // data (roles, tax rates, zones, event rules) untouched.
+            $pdo = Database::connection();
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+            $counts = [];
+            foreach (['variant_packs', 'product_variants', 'product_images', 'product_tags',
+                      'product_attributes', 'quantity_price_tiers', 'inventory', 'products'] as $table) {
+                $stmt = $pdo->prepare("DELETE FROM `{$table}` WHERE `is_demo_data` = 1");
+                try {
+                    $stmt->execute();
+                    $counts[$table] = $stmt->rowCount();
+                } catch (Throwable) {
+                    // Table has no is_demo_data column — skip it.
+                }
+            }
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+            head('Demo catalog removed');
+            foreach ($counts as $table => $n) {
+                out(sprintf('  %-28s %d rows', $table, $n));
+            }
+            out();
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:check':
+            $pdo = Database::connection();
+            $db = (string) Config::get('database.connections.mysql.database');
+            head("Schema check — {$db}");
+
+            $tables = $pdo->query(
+                "SELECT TABLE_NAME, TABLE_ROWS FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = " . $pdo->quote($db) . " AND TABLE_TYPE='BASE TABLE'
+                 ORDER BY TABLE_NAME"
+            )->fetchAll();
+
+            $fks = (int) $pdo->query(
+                "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS
+                 WHERE CONSTRAINT_SCHEMA = " . $pdo->quote($db)
+            )->fetchColumn();
+
+            $indexes = (int) $pdo->query(
+                "SELECT COUNT(DISTINCT TABLE_NAME, INDEX_NAME) FROM information_schema.STATISTICS
+                 WHERE TABLE_SCHEMA = " . $pdo->quote($db)
+            )->fetchColumn();
+
+            foreach ($tables as $t) {
+                $rows = $pdo->query("SELECT COUNT(*) FROM `{$t['TABLE_NAME']}`")->fetchColumn();
+                out(sprintf('  %-34s %s%8s rows%s', $t['TABLE_NAME'], C_DIM, number_format((int) $rows), C_RESET));
+            }
+            out();
+            ok(sprintf('%d tables · %d foreign keys · %d indexes', count($tables), $fks, $indexes));
+            out();
+            break;
+
+        // ------------------------------------------------------------------
+        case 'db:verify':
+            $verifier = new \App\Support\SeedVerifier(Database::connection());
+            head('Data integrity checks');
+            $failed = 0;
+            foreach ($verifier->run() as [$passed, $name, $detail]) {
+                if ($passed) {
+                    out(sprintf('%s  pass %s %-44s %s', C_GREEN, C_RESET, $name, C_DIM . $detail . C_RESET));
+                } else {
+                    $failed++;
+                    out(sprintf('%s  FAIL %s %-44s %s', C_RED, C_RESET, $name, $detail));
+                }
+            }
+            out();
+            if ($failed > 0) {
+                fail("{$failed} check(s) failed.");
+                out();
+                exit(1);
+            }
+            ok('All checks passed.');
+            out();
+            break;
+
+        // ------------------------------------------------------------------
+        case 'list':
+        default:
+            head('SupplyKaro console');
+            dim('  Usage: php bin/console <command> [--option]');
+            out();
+            $commands = [
+                'key:generate'   => 'Write a fresh 32-byte APP_KEY into .env',
+                'db:create'      => 'Create the database if it does not exist',
+                'db:grants'      => 'Print read-only GRANT statements for the AI user  (--host=localhost)',
+                'migrate'        => 'Run every pending migration',
+                'migrate:status' => 'Show applied and pending migrations',
+                'migrate:fresh'  => 'Drop all tables and re-migrate  (--force, --seed)',
+                'db:seed'        => 'Run seeders  (--class=CatalogSeeder, --only=reference)',
+                'db:check'       => 'Report tables, row counts, FK and index totals',
+                'db:verify'      => 'Assert the seeded data is internally consistent',
+                'db:wipe-demo'   => 'Delete all DEMO/PLACEHOLDER catalog rows',
+            ];
+            foreach ($commands as $name => $desc) {
+                out(sprintf('  %s%-16s%s %s', C_CYAN, $name, C_RESET, $desc));
+            }
+            out();
+            break;
+    }
+} catch (Throwable $e) {
+    out();
+    fail($e->getMessage());
+    if (Config::get('app.debug')) {
+        dim('  ' . $e->getFile() . ':' . $e->getLine());
+    }
+    out();
+    exit(1);
+}
+
+/**
+ * Discover and run seeders in declared order.
+ *
+ * @param array<string,mixed> $options
+ */
+function runSeeders(string $root, array $options): void
+{
+    $path = (string) Config::get('database.seeders.path');
+    $files = glob($path . '/*.php') ?: [];
+    sort($files);
+
+    /** @var list<Seeder> $seeders */
+    $seeders = [];
+    foreach ($files as $file) {
+        $class = 'Database\\Seeders\\' . basename($file, '.php');
+        if (!class_exists($class)) {
+            require_once $file;
+        }
+        if (!class_exists($class)) {
+            continue;
+        }
+        $reflection = new ReflectionClass($class);
+        if ($reflection->isAbstract() || !$reflection->isSubclassOf(Seeder::class)) {
+            continue;
+        }
+        $seeders[] = new $class();
+    }
+
+    usort($seeders, static fn (Seeder $a, Seeder $b): int => $a->order() <=> $b->order());
+
+    if (isset($options['class'])) {
+        $wanted = (string) $options['class'];
+        $seeders = array_values(array_filter(
+            $seeders,
+            static fn (Seeder $s): bool => $s->name() === $wanted
+        ));
+        if ($seeders === []) {
+            fail("No seeder named {$wanted}.");
+            exit(1);
+        }
+    }
+
+    head('Seeding');
+    $start = microtime(true);
+
+    foreach ($seeders as $seeder) {
+        $t = microtime(true);
+        $seeder->run();
+        ok(sprintf('%-30s %s', $seeder->name(), C_DIM . sprintf('%.2fs', microtime(true) - $t) . C_RESET));
+        foreach ($seeder->messages() as $message) {
+            dim('        ' . $message);
+        }
+    }
+
+    printf("\n  %d seeders in %.2fs\n\n", count($seeders), microtime(true) - $start);
+}
