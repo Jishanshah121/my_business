@@ -150,6 +150,7 @@ abstract class Seeder
         return (int) $this->pdo->lastInsertId();
     }
 
+    /** @param array<string,mixed> $bindings */
     protected function count(string $table, string $where = '1', array $bindings = []): int
     {
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM `{$table}` WHERE {$where}");

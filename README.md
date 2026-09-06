@@ -130,12 +130,12 @@ Created by `AdminUserSeeder`, which **refuses to run when `APP_ENV=production`**
 
 | Email | Role | Group |
 |---|---|---|
-| `admin@supplykaro.test` | Super Admin | Retail |
-| `ops@supplykaro.test` | Order Manager | Retail |
-| `sales@supplykaro.test` | Sales Manager | Retail |
-| `stock@supplykaro.test` | Inventory Manager | Retail |
-| `customer@supplykaro.test` | Customer | Retail |
-| `cafe@supplykaro.test` | Customer (approved business) | Business Standard |
+| `admin@supplykaro.test`        | Super Admin       | Retail |
+| `ops@supplykaro.test`          | Order Manager     | Retail |
+| `sales@supplykaro.test`        | Sales Manager     | Retail |
+| `stock@supplykaro.test`        | Inventory Manager | Retail |
+| `customer@supplykaro.test`     | Customer          | Retail |
+| `cafe@supplykaro.test`         | Customer (approved business) | Business Standard |
 
 Password for all: `SupplyKaro#Dev2026`
 
@@ -264,3 +264,9 @@ Python AI → Recommendations → Analytics → Deployment.
 
 Phases 0–5 are the MVP. AI features come only after the core commerce system is
 stable.
+
+
+#admin@supplykaro.test 
+SupplyKaro#Dev2026
+
+php -S localhost:8000 -t public

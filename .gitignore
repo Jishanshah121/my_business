@@ -24,6 +24,7 @@ python-service/**/__pycache__/
 
 # Tooling
 .phpunit.result.cache
+.phpunit.cache/
 .phpstan.cache/
 coverage/
 

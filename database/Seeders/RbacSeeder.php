@@ -115,9 +115,7 @@ final class RbacSeeder extends Seeder
                 ['name' => $name, 'description' => $description, 'is_staff' => (int) $isStaff, 'is_system' => 1]
             );
 
-            $codes = $grants === '*'
-                ? array_keys($permissionIds)
-                : $this->expand(is_array($grants) ? $grants : []);
+            $codes = $grants === '*' ? array_keys($permissionIds) : $this->expand($grants);
 
             $this->pdo->prepare('DELETE FROM `role_permissions` WHERE `role_id` = ?')->execute([$roleId]);
 

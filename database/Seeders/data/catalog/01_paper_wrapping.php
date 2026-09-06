@@ -8,6 +8,7 @@ return [
     [
         'sku_root' => 'BP-SHT', 'name' => 'Butter Paper Sheets',
         'category' => 'butter-paper', 'hsn' => '4806', 'brand' => 'supplykaro-essentials',
+        'image' => '/assets/images/products/butterpaper.png',
         'material' => 'Greaseproof paper', 'unit_type' => 'sheet',
         'keywords' => 'butter paper, butter peper, greaseproof paper, baking paper, parchment paper, wrapping paper, roti wrap',
         'short' => 'Food-grade greaseproof sheets for lining, wrapping and baking.',
@@ -24,6 +25,7 @@ return [
     [
         'sku_root' => 'BP-ROL', 'name' => 'Butter Paper Roll',
         'category' => 'butter-paper', 'hsn' => '4806', 'brand' => 'supplykaro-pro',
+        'image' => '/assets/images/products/butterpaper.png',
         'material' => 'Greaseproof paper', 'unit_type' => 'roll',
         'keywords' => 'butter paper roll, baking paper roll, parchment roll, greaseproof roll',
         'short' => 'Continuous greaseproof roll for high-volume bakery and kitchen use.',
