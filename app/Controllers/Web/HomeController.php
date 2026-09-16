@@ -26,7 +26,7 @@ final class HomeController extends Controller
                 'ctaUrl'   => '/categories',
                 'secText'  => 'Plan Your Event',
                 'secUrl'   => '/party-box',
-                'image'    => 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=1600&auto=format&fit=crop&q=80',
+                'image'    => '/assets/images/hero/hero-serve-pack.webp',
             ],
             [
                 'id'       => 2,
@@ -36,7 +36,7 @@ final class HomeController extends Controller
                 'ctaUrl'   => '/b2b',
                 'secText'  => 'Request Bulk Quote',
                 'secUrl'   => '/b2b#quote-form',
-                'image'    => 'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=1600&auto=format&fit=crop&q=80',
+                'image'    => '/assets/images/hero/hero-business.webp',
             ],
             [
                 'id'       => 3,
@@ -46,7 +46,7 @@ final class HomeController extends Controller
                 'ctaUrl'   => '/party-box',
                 'secText'  => 'Open Calculator',
                 'secUrl'   => '/event-calculator',
-                'image'    => 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=1600&auto=format&fit=crop&q=80',
+                'image'    => '/assets/images/hero/hero-wedding.webp',
             ],
             [
                 'id'       => 4,
@@ -56,7 +56,7 @@ final class HomeController extends Controller
                 'ctaUrl'   => '/b2b',
                 'secText'  => 'Sample Box Request',
                 'secUrl'   => '/b2b#quote-form',
-                'image'    => '/assets/images/banners/warehouse-hero.png',
+                'image'    => '/assets/images/hero/hero-bulk-supply.webp',
             ],
         ];
 
@@ -66,28 +66,28 @@ final class HomeController extends Controller
                 'desc'  => 'Tableware, takeaway packaging, tissues and dine-in essentials.',
                 'cta'   => 'Shop Restaurant Supplies →',
                 'url'   => '/category/tableware',
-                'image' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop&q=80',
+                'image' => '/assets/images/business/business-restaurants.webp',
             ],
             [
                 'name'  => 'Cafes & Bakeries',
                 'desc'  => 'Ripple cups, pastry boxes, wooden stirrers & cake boards.',
                 'cta'   => 'Shop Cafe Supplies →',
                 'url'   => '/category/cups-beverage',
-                'image' => 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80',
+                'image' => '/assets/images/business/business-cafes.webp',
             ],
             [
                 'name'  => 'Cloud Kitchens',
                 'desc'  => 'Leakproof meal trays, tamper-evident tape & kraft bags.',
                 'cta'   => 'Shop Kitchen Packaging →',
                 'url'   => '/category/food-packaging',
-                'image' => 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
+                'image' => '/assets/images/business/business-cloud-kitchens.webp',
             ],
             [
                 'name'  => 'Catering & Events',
                 'desc'  => 'Areca palm platters, buffet bowls, napkins & garbage bags.',
                 'cta'   => 'Shop Catering Supplies →',
                 'url'   => '/category/tableware',
-                'image' => 'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=80',
+                'image' => '/assets/images/business/business-catering.webp',
             ],
         ];
 

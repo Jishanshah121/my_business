@@ -213,25 +213,94 @@ try {
         // ------------------------------------------------------------------
         case 'db:wipe-demo':
             // Removes every row the demo seeders created, leaving reference
-            // data (roles, tax rates, zones, event rules) untouched.
+            // data (roles, tax rates, zones, categories, event rules)
+            // untouched.
+            //
+            // Order matters and foreign keys stay ENABLED. An earlier version
+            // disabled FOREIGN_KEY_CHECKS and deleted only the catalog tables,
+            // which silently bypassed ON DELETE RESTRICT and left link rows
+            // pointing at deleted packs — dead bundle components and event
+            // calculator mappings that no constraint would ever catch. Link
+            // tables are cleared first, then children before parents, so every
+            // constraint is satisfied at each step and a genuine FK error
+            // surfaces instead of being masked.
             $pdo = Database::connection();
-            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+
+            $demoProducts = '(SELECT `id` FROM (SELECT `id` FROM `products` WHERE `is_demo_data` = 1) AS p)';
+            $demoPacks    = '(SELECT `id` FROM (SELECT `id` FROM `variant_packs` WHERE `is_demo_data` = 1) AS v)';
+
+            $steps = [
+                // 1. Link tables first — these reference packs/products and
+                //    would otherwise be orphaned or block the delete.
+                ['product_associations', "DELETE FROM `product_associations`
+                     WHERE `product_id` IN {$demoProducts} OR `related_product_id` IN {$demoProducts}"],
+                ['bundle_items',         "DELETE FROM `bundle_items`         WHERE `variant_pack_id` IN {$demoPacks}"],
+                ['item_role_products',   "DELETE FROM `item_role_products`   WHERE `variant_pack_id` IN {$demoPacks}"],
+                ['event_kit_items',      "DELETE FROM `event_kit_items`      WHERE `variant_pack_id` IN {$demoPacks}"],
+                ['wishlist_items',       "DELETE FROM `wishlist_items`       WHERE `product_id` IN {$demoProducts}"],
+                ['cart_items',           "DELETE FROM `cart_items`           WHERE `variant_pack_id` IN {$demoPacks}"],
+                ['occasion_products',    "DELETE FROM `occasion_products`    WHERE `product_id` IN {$demoProducts}"],
+                ['business_type_products', "DELETE FROM `business_type_products` WHERE `product_id` IN {$demoProducts}"],
+                ['reviews',              "DELETE FROM `reviews`              WHERE `product_id` IN {$demoProducts}"],
+
+                // 2. Catalog children, then parents.
+                ['quantity_price_tiers', "DELETE FROM `quantity_price_tiers` WHERE `is_demo_data` = 1"],
+                ['inventory',            "DELETE FROM `inventory`            WHERE `is_demo_data` = 1"],
+                ['product_images',       "DELETE FROM `product_images`       WHERE `is_demo_data` = 1"],
+                ['product_tags',         "DELETE FROM `product_tags`         WHERE `is_demo_data` = 1"],
+                ['product_attributes',   "DELETE FROM `product_attributes`   WHERE `is_demo_data` = 1"],
+                ['variant_packs',        "DELETE FROM `variant_packs`        WHERE `is_demo_data` = 1"],
+                ['product_variants',     "DELETE FROM `product_variants`     WHERE `is_demo_data` = 1"],
+                ['products',             "DELETE FROM `products`             WHERE `is_demo_data` = 1"],
+            ];
+
+            // order_items keeps an immutable snapshot of what was sold and must
+            // never be touched by a demo wipe. Refuse outright rather than
+            // damage order history.
+            $sold = (int) $pdo->query(
+                "SELECT COUNT(*) FROM `order_items` oi
+                 JOIN `variant_packs` vp ON vp.`id` = oi.`variant_pack_id`
+                 WHERE vp.`is_demo_data` = 1"
+            )->fetchColumn();
+
+            if ($sold > 0) {
+                fail("Refusing to wipe: {$sold} order line(s) reference demo packs.");
+                warn('Deleting them would corrupt real order history. Investigate first.');
+                out();
+                exit(1);
+            }
+
             $counts = [];
-            foreach (['variant_packs', 'product_variants', 'product_images', 'product_tags',
-                      'product_attributes', 'quantity_price_tiers', 'inventory', 'products'] as $table) {
-                $stmt = $pdo->prepare("DELETE FROM `{$table}` WHERE `is_demo_data` = 1");
-                try {
+            $pdo->beginTransaction();
+            try {
+                foreach ($steps as [$label, $sql]) {
+                    $stmt = $pdo->prepare($sql);
                     $stmt->execute();
-                    $counts[$table] = $stmt->rowCount();
-                } catch (Throwable) {
-                    // Table has no is_demo_data column — skip it.
+                    $counts[$label] = $stmt->rowCount();
                 }
+                $pdo->commit();
+            } catch (Throwable $e) {
+                $pdo->rollBack();
+                fail('Wipe failed and was rolled back: ' . $e->getMessage());
+                out();
+                exit(1);
             }
-            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+
+            // Category counters are denormalised and must follow the delete.
+            $pdo->exec(
+                "UPDATE `categories` c SET c.`product_count` = (
+                     SELECT COUNT(*) FROM `products` p
+                     WHERE p.`category_id` = c.`id` AND p.`status` = 'published' AND p.`deleted_at` IS NULL)"
+            );
+
             head('Demo catalog removed');
+            $total = 0;
             foreach ($counts as $table => $n) {
-                out(sprintf('  %-28s %d rows', $table, $n));
+                $total += $n;
+                out(sprintf('  %-26s %s rows', $table, C_DIM . $n . C_RESET));
             }
+            out();
+            ok("{$total} rows deleted, foreign keys enforced throughout");
             out();
             break;
 

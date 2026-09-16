@@ -683,6 +683,10 @@ a:hover { color: var(--primary-dark); }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Every hero photo places its subject on the right with negative space on
+     the left. Anchoring right means narrow viewports crop the empty side, not
+     the product. */
+  object-position: right center;
   opacity: 0.85;
 }
 .hero-slide-overlay {
@@ -693,14 +697,25 @@ a:hover { color: var(--primary-dark); }
   height: 100%;
   background: linear-gradient(90deg, rgba(18, 18, 16, 0.85) 0%, rgba(18, 18, 16, 0.4) 50%, rgba(18, 18, 16, 0.1) 100%);
 }
+@media (max-width: 768px) {
+  /* Narrow viewports crop to the subject, which sits directly behind the
+     copy. Darken overall so the headline keeps its contrast. */
+  .hero-slide-overlay {
+    background: linear-gradient(180deg, rgba(18, 18, 16, 0.55) 0%, rgba(18, 18, 16, 0.80) 100%);
+  }
+}
 .hero-slide-content {
   position: relative;
   z-index: 2;
-  padding: 0 48px;
-  max-width: 580px;
+  /* 88px clears the prev arrow (16px offset + 40px wide = 56px) with room to
+     breathe. At 48px the headline and subtitle were sliced by the button. */
+  padding: 0 88px;
+  max-width: 620px;
   color: #FFFFFF;
 }
 @media (max-width: 768px) {
+  /* Arrows are hidden below this width (see .hero-nav-arrow), so the content
+     can use the full gutter again. */
   .hero-slide-content { padding: 0 20px; }
 }
 
@@ -741,10 +756,15 @@ a:hover { color: var(--primary-dark); }
 }
 .hero-nav-prev { left: 16px; }
 .hero-nav-next { right: 16px; }
+@media (max-width: 768px) {
+  /* Too cramped beside the copy on a phone. The pagination dots carry
+     navigation here — they have click handlers in app.js. */
+  .hero-nav-arrow { display: none; }
+}
 
 .hero-dots-wrap {
   position: absolute;
-  bottom: 16px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -754,6 +774,11 @@ a:hover { color: var(--primary-dark); }
 .hero-dot {
   width: 24px;
   height: 4px;
+  /* Padding-box keeps the visual bar slim while giving thumbs something to
+     actually hit. */
+  background-clip: content-box;
+  padding: 10px 0;
+  box-sizing: content-box;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.4);
   cursor: pointer;

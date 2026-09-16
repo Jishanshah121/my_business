@@ -131,7 +131,7 @@ final class ProductManagementController extends Controller
         $pdo = Database::connection();
 
         $name = trim((string) $request->post('name', ''));
-        $categoryId = (int) $request->post('category_id'x, 0);
+        $categoryId = (int) $request->post('category_id', 0);
         $brandId = $request->post('brand_id') ? (int) $request->post('brand_id') : null;
         $skuRoot = strtoupper(trim((string) $request->post('sku_root', '')));
         $hsnCode = trim((string) $request->post('hsn_code', '4823'));

@@ -34,6 +34,7 @@ final class SeedVerifier
         $this->checkPackDerivation();
         $this->checkInventory();
         $this->checkDemoFlagging();
+        $this->checkNoDanglingReferences();
         $this->checkReadOnlyViews();
 
         return $this->results;
@@ -274,22 +275,70 @@ final class SeedVerifier
     }
 
     /** All demo catalog rows must be removable in one step. */
+    /**
+     * Demo rows must stay flagged so `db:wipe-demo` can find them.
+     *
+     * This deliberately does NOT assert that every row is demo data — real
+     * products created through the admin are correctly unflagged, and an
+     * earlier version of this check failed the moment the first genuine
+     * product was added.
+     */
     private function checkDemoFlagging(): void
     {
-        $unflagged = [];
-        foreach (['products', 'product_variants', 'variant_packs', 'quantity_price_tiers', 'inventory'] as $table) {
-            $count = (int) $this->pdo->query("SELECT COUNT(*) FROM `{$table}` WHERE `is_demo_data` = 0")->fetchColumn();
-            if ($count > 0) {
-                $unflagged[] = "{$table}:{$count}";
+        $demo = (int) $this->pdo->query('SELECT COUNT(*) FROM `products` WHERE `is_demo_data` = 1')->fetchColumn();
+        $real = (int) $this->pdo->query('SELECT COUNT(*) FROM `products` WHERE `is_demo_data` = 0')->fetchColumn();
+
+        // A demo product whose variants or packs are unflagged would survive a
+        // wipe as an orphan, so the flag must be consistent down the tree.
+        $inconsistent = (int) $this->pdo->query(
+            "SELECT COUNT(*) FROM `product_variants` v
+             JOIN `products` p ON p.`id` = v.`product_id`
+             WHERE p.`is_demo_data` <> v.`is_demo_data`"
+        )->fetchColumn();
+
+        $this->assert(
+            $inconsistent === 0,
+            'Demo flags are consistent',
+            $inconsistent === 0
+                ? "{$demo} demo / {$real} real products, flags consistent down to variants"
+                : "{$inconsistent} variants disagree with their product's demo flag"
+        );
+    }
+
+    /**
+     * Nothing may reference a row that no longer exists.
+     *
+     * The other checks join through foreign keys, which silently hides
+     * dangling rows — a broken link simply drops out of the result set. This
+     * looks for them directly with LEFT JOIN ... IS NULL.
+     */
+    private function checkNoDanglingReferences(): void
+    {
+        $checks = [
+            'bundle_items -> variant_packs' =>
+                'SELECT COUNT(*) FROM `bundle_items` x LEFT JOIN `variant_packs` t ON t.`id` = x.`variant_pack_id` WHERE t.`id` IS NULL',
+            'item_role_products -> variant_packs' =>
+                'SELECT COUNT(*) FROM `item_role_products` x LEFT JOIN `variant_packs` t ON t.`id` = x.`variant_pack_id` WHERE t.`id` IS NULL',
+            'product_associations -> products' =>
+                'SELECT COUNT(*) FROM `product_associations` x LEFT JOIN `products` t ON t.`id` = x.`product_id` WHERE t.`id` IS NULL',
+            'variant_packs -> product_variants' =>
+                'SELECT COUNT(*) FROM `variant_packs` x LEFT JOIN `product_variants` t ON t.`id` = x.`variant_id` WHERE t.`id` IS NULL',
+            'inventory -> product_variants' =>
+                'SELECT COUNT(*) FROM `inventory` x LEFT JOIN `product_variants` t ON t.`id` = x.`variant_id` WHERE t.`id` IS NULL',
+        ];
+
+        $broken = [];
+        foreach ($checks as $label => $sql) {
+            $n = (int) $this->pdo->query($sql)->fetchColumn();
+            if ($n > 0) {
+                $broken[] = "{$label}: {$n}";
             }
         }
 
         $this->assert(
-            $unflagged === [],
-            'Demo data is fully flagged',
-            $unflagged === []
-                ? 'every catalog row carries is_demo_data = 1'
-                : 'unflagged rows in ' . implode(', ', $unflagged)
+            $broken === [],
+            'No dangling references',
+            $broken === [] ? 'every link resolves to a live row' : implode(', ', $broken)
         );
     }
 
@@ -307,11 +356,15 @@ final class SeedVerifier
                AND (COLUMN_NAME LIKE '%price%' OR COLUMN_NAME LIKE '%mrp%')"
         )->fetchAll(PDO::FETCH_COLUMN);
 
+        // The property under test is that the views are queryable and leak no
+        // pricing. Row counts are reported, not asserted: an empty catalog is a
+        // legitimate state (right after a demo wipe, say) and must not be
+        // reported as a security regression.
         $this->assert(
-            $searchable > 0 && $availability > 0 && $columns === [],
+            $columns === [],
             'AI read-only views expose no prices',
             $columns === []
-                ? "{$searchable} searchable SKUs, {$availability} stock rows, zero price columns exposed"
+                ? "zero price columns exposed ({$searchable} searchable SKUs, {$availability} stock rows)"
                 : 'price columns leaked: ' . implode(', ', $columns)
         );
     }

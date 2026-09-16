@@ -20,6 +20,9 @@ python-service/**/__pycache__/
 /storage/uploads/*
 /storage/invoices/*
 /storage/exports/*
+# Database dumps: password hashes, customer emails, order history.
+# Never publish these.
+/storage/backups/
 !/storage/**/.gitkeep
 
 # Tooling

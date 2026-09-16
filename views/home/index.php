@@ -22,9 +22,21 @@ $view->start('content');
        ========================================================================= -->
   <div class="hero-carousel-container" aria-label="Hero Highlights">
     <div class="hero-slider-track" id="hero-slider-track">
-      <?php foreach ($heroSlides as $slide): ?>
+      <?php foreach ($heroSlides as $idx => $slide): ?>
         <div class="hero-slide">
-          <img src="<?= $view->e($slide['image']) ?>" alt="<?= $view->e($slide['title']) ?>" class="hero-slide-bg" loading="lazy">
+          <?php /* Slide 1 is the largest contentful paint — load it eagerly and
+                   at high priority. The rest stay lazy so they cost nothing up
+                   front. width/height are set to reserve the box and stop the
+                   carousel shifting layout as each image arrives. alt is empty
+                   by design: the <h1> below already states the same words, so
+                   describing the backdrop again would just be screen-reader
+                   noise. */ ?>
+          <img src="<?= $view->e($slide['image']) ?>"
+               alt=""
+               class="hero-slide-bg"
+               width="1920" height="811"
+               decoding="async"
+               <?= $idx === 0 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"' ?>>
           <div class="hero-slide-overlay"></div>
           <div class="hero-slide-content">
             <h1><?= $view->e($slide['title']) ?></h1>
@@ -178,7 +190,17 @@ $view->start('content');
     <div class="business-cards-grid">
       <?php foreach ($businessNeeds as $biz): ?>
         <a href="<?= $view->e($biz['url']) ?>" class="business-card-tile">
-          <img src="<?= $view->e($biz['image']) ?>" alt="<?= $view->e($biz['name']) ?>" class="business-card-bg" loading="lazy">
+          <?php /* alt is empty by design: business-card-title directly below
+                   already states the name, so repeating it here would make a
+                   screen reader announce every tile twice. Dimensions are set
+                   to reserve the box and stop the grid shifting as each image
+                   arrives; these sit below the fold so lazy is correct. */ ?>
+          <img src="<?= $view->e($biz['image']) ?>"
+               alt=""
+               class="business-card-bg"
+               width="900" height="600"
+               decoding="async"
+               loading="lazy">
           <div class="business-card-overlay"></div>
           <div class="business-card-info">
             <div class="business-card-title"><?= $view->e($biz['name']) ?></div>
