@@ -18,19 +18,13 @@ $view->start('content');
 <div class="wrap">
   
   <!-- =========================================================================
-       SECTION 1: EDITORIAL HERO CAROUSEL
+       SECTION 1: EDITORIAL HERO (Desktop Carousel + Hyperpure-Style Mobile Showcase)
        ========================================================================= -->
-  <div class="hero-carousel-container" aria-label="Hero Highlights">
+  <!-- Desktop Hero Carousel (Visible on Desktop >= 769px) -->
+  <div class="hero-carousel-container desktop-only-hero" aria-label="Hero Highlights">
     <div class="hero-slider-track" id="hero-slider-track">
       <?php foreach ($heroSlides as $idx => $slide): ?>
         <div class="hero-slide">
-          <?php /* Slide 1 is the largest contentful paint — load it eagerly and
-                   at high priority. The rest stay lazy so they cost nothing up
-                   front. width/height are set to reserve the box and stop the
-                   carousel shifting layout as each image arrives. alt is empty
-                   by design: the <h1> below already states the same words, so
-                   describing the backdrop again would just be screen-reader
-                   noise. */ ?>
           <img src="<?= $view->e($slide['image']) ?>"
                alt=""
                class="hero-slide-bg"
@@ -65,6 +59,126 @@ $view->start('content');
       <?php foreach ($heroSlides as $idx => $slide): ?>
         <div class="hero-dot <?= $idx === 0 ? 'active' : '' ?>" data-index="<?= $idx ?>"></div>
       <?php endforeach; ?>
+    </div>
+  </div>
+
+  <!-- Mobile Hero Showcase (Hyperpure Object & Feature Placement Reference) -->
+  <div class="hp-mobile-hero-wrapper mobile-only-hero">
+    <!-- Top Curved Card (SupplyKaro Emerald Green) -->
+    <div class="hp-hero-card">
+      <div class="hp-hero-text">
+        <h1 class="hp-hero-title">Innovate your supply with us</h1>
+        <p class="hp-hero-subtitle">Curated &amp; created to fit your unique restaurant &amp; business needs</p>
+        <div class="hp-hero-cta-wrap">
+          <a href="/categories" class="hp-dark-pill-btn">Know more</a>
+        </div>
+      </div>
+
+      <!-- Smartphone Mockup Showcase -->
+      <div class="hp-phone-mockup-wrapper">
+        <!-- Floating Food & Packaging Left -->
+        <div class="hp-floating-dish hp-dish-left">
+          <img src="/assets/images/hero/hero-serve-pack.webp" alt="Fast food" class="hp-dish-img">
+        </div>
+
+        <!-- Phone Frame -->
+        <div class="hp-phone-frame">
+          <div class="hp-phone-notch">
+            <span class="hp-phone-time">8:11</span>
+            <div class="hp-phone-pill-notch"></div>
+            <div class="hp-phone-icons">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.35 19.64 10.63 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+          </div>
+
+          <div class="hp-phone-screen">
+            <div class="hp-phone-header">Quickly add to order</div>
+            
+            <div class="hp-phone-grid">
+              <!-- Item 1 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">📦</div>
+                <span class="hp-grid-name">Burger Box</span>
+              </div>
+
+              <!-- Item 2 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">🥤</div>
+                <span class="hp-grid-name">Paper Cups</span>
+              </div>
+
+              <!-- Item 3 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">🍱</div>
+                <span class="hp-grid-name">Meal Tray</span>
+              </div>
+
+              <!-- Item 4 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">🍴</div>
+                <span class="hp-grid-name">Wooden Cutlery</span>
+              </div>
+
+              <!-- Item 5 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">🍕</div>
+                <span class="hp-grid-name">Pizza Box</span>
+              </div>
+
+              <!-- Item 6 -->
+              <div class="hp-grid-card">
+                <span class="hp-added-pill">✓ ADDED</span>
+                <div class="hp-grid-icon-box">🧻</div>
+                <span class="hp-grid-name">Napkins</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Food & Packaging Right -->
+        <div class="hp-floating-dish hp-dish-right">
+          <img src="/assets/images/hero/hero-business.webp" alt="Packaging containers" class="hp-dish-img">
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Carousel Dots -->
+    <div class="hp-carousel-dots-strip">
+      <span class="hp-dot active"></span>
+      <span class="hp-dot"></span>
+      <span class="hp-dot"></span>
+      <span class="hp-dot"></span>
+    </div>
+
+    <!-- Scale & Trust Stats Strip (130+ Cities, 1 Lakh+ Partners) -->
+    <div class="hp-stats-strip">
+      <div class="hp-stat-col">
+        <div class="hp-stat-number">130+</div>
+        <div class="hp-stat-label">cities we're active in</div>
+      </div>
+      <div class="hp-stat-col">
+        <div class="hp-stat-number">1 Lakh+</div>
+        <div class="hp-stat-label">partners trust us</div>
+      </div>
+    </div>
+
+    <!-- Floating App / Order Prompt Banner -->
+    <div class="hp-floating-app-banner">
+      <div class="hp-app-icon-wrap">
+        <div class="hp-app-logo-box">
+          <span>S</span>
+        </div>
+      </div>
+      <div class="hp-app-info">
+        <div class="hp-app-title">Download the SupplyKaro app for best experience</div>
+      </div>
+      <a href="/categories" class="hp-app-cta-btn">Get app</a>
     </div>
   </div>
 

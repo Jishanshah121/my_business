@@ -858,6 +858,29 @@
         if (form) form.submit();
       });
     });
+
+    // Hyperpure Mobile Search Toggle
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+    const mobileSearchDrawer = document.getElementById('mobile-search-drawer');
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    const mobileSearchClose = document.getElementById('mobile-search-close');
+
+    if (mobileSearchToggle && mobileSearchDrawer) {
+      mobileSearchToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        mobileSearchDrawer.classList.toggle('active');
+        if (mobileSearchDrawer.classList.contains('active') && mobileSearchInput) {
+          setTimeout(() => mobileSearchInput.focus(), 120);
+        }
+      });
+    }
+
+    if (mobileSearchClose && mobileSearchDrawer) {
+      mobileSearchClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        mobileSearchDrawer.classList.remove('active');
+      });
+    }
   }
 
   // ----------------------------------------------------------- Cart Drawer Toggle
