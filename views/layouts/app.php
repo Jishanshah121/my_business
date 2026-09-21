@@ -48,8 +48,14 @@ $path = $_SERVER['REQUEST_URI'] ?? '/';
 <!-- Slide-Out Cart Drawer -->
 <?= $view->include('components/cart-drawer', ['view' => $view]) ?>
 
+<!-- Off-Canvas Mobile Menu Drawer -->
+<?= $view->include('components/mobile-menu', ['view' => $view, 'auth' => $auth]) ?>
+
 <!-- Master Footer -->
 <?= $view->include('components/footer', ['view' => $view]) ?>
+
+<!-- Fixed Mobile Bottom Navigation Bar -->
+<?= $view->include('components/mobile-nav', ['view' => $view, 'auth' => $auth]) ?>
 
 <!-- Core JavaScript Engine -->
 <script src="/assets/js/app.js"></script>

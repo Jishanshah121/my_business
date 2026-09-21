@@ -78,18 +78,35 @@ $view->start('content');
     </div>
 
     <div class="category-rail-track" id="category-rail-track">
+      <?php 
+      $getCatIcon = function(string $slug): string {
+        $slug = strtolower($slug);
+        if (str_contains($slug, 'tableware')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>';
+        } elseif (str_contains($slug, 'cup') || str_contains($slug, 'beverage')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/></svg>';
+        } elseif (str_contains($slug, 'cutlery') || str_contains($slug, 'spoon')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v20M2 2v10a4 4 0 0 0 4 4h0a4 4 0 0 0 4-4V2M6 2v20"/></svg>';
+        } elseif (str_contains($slug, 'pack') || str_contains($slug, 'box')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
+        } elseif (str_contains($slug, 'tissue') || str_contains($slug, 'napkin') || str_contains($slug, 'hygiene')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="8" rx="2"/><path d="M9 8c0-3 3-5 3-5s3 2 3 5"/></svg>';
+        } elseif (str_contains($slug, 'clean') || str_contains($slug, 'house')) {
+          return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>';
+        }
+        return '<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>';
+      };
+      ?>
       <?php foreach ($primaryCategories as $cat): ?>
         <a href="/category/<?= $view->e($cat['slug']) ?>" class="category-tile-card">
           <div class="category-icon-box">
-            <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
-            </svg>
+            <?= $getCatIcon($cat['slug'] ?? '') ?>
           </div>
           <span class="category-tile-name"><?= $view->e($cat['name']) ?></span>
         </a>
       <?php endforeach; ?>
-      <a href="/categories" class="category-tile-card" style="background: var(--surface-alt);">
-        <div class="category-icon-box" style="background: var(--border);">
+      <a href="/categories" class="category-tile-card view-all-card">
+        <div class="category-icon-box view-all-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
           </svg>

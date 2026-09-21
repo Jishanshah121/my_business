@@ -104,18 +104,18 @@ $currentUser = $auth->user();
 
   <!-- Mobile Header Stack -->
   <div class="mobile-header-stack">
-    <!-- Row 1 -->
+    <!-- Row 1: Menu, Brand Logo, Cart -->
     <div class="mobile-row-1">
-      <a href="/categories" class="btn btn-ghost btn-sm" style="padding: 4px 8px;" aria-label="Menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="btn btn-ghost btn-sm" id="open-mobile-menu-btn" style="padding: 6px 8px; border-radius: 8px;" aria-label="Open Navigation Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
         </svg>
-      </a>
+      </button>
       <a href="/" class="brand-logo" style="text-align: center;">
-        <div class="brand-name" style="font-size: 1.35rem;">Supply<span>Karo</span></div>
+        <div class="brand-name" style="font-size: 1.4rem;">Supply<span>Karo</span></div>
       </a>
-      <button type="button" class="cart-icon-btn" style="padding: 0;" aria-label="View Shopping Basket">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="cart-icon-btn mobile-cart-btn" style="padding: 4px; position: relative;" aria-label="View Shopping Basket">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
         </svg>
         <span class="cart-count-pill" style="display: none;">0</span>
@@ -136,19 +136,23 @@ $currentUser = $auth->user();
             type="text" 
             name="q" 
             class="search-input-field" 
-            placeholder="Search items or categories" 
+            placeholder="Search items, cups, packaging..." 
             value="<?= $view->e($_GET['q'] ?? '') ?>"
+            autocomplete="off"
           >
         </form>
       </div>
     </div>
 
-    <!-- Row 3: Delivery Location -->
+    <!-- Row 3: Delivery Location Pill -->
     <div class="mobile-row-3 open-location-modal" style="cursor: pointer;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
-      </svg>
-      <span>Delivering to: <strong id="mobile-delivery-city">Bokaro, 827001</strong> ▼</span>
+      <div class="mobile-loc-pill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>Delivering to: <strong id="mobile-delivery-city">Bokaro, 827001</strong></span>
+        <svg class="loc-chevron-down" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
     </div>
   </div>
 </header>

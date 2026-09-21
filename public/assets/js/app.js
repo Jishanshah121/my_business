@@ -597,6 +597,35 @@
     track.addEventListener('mouseenter', stopAuto);
     track.addEventListener('mouseleave', startAuto);
 
+    // Touch / Swipe Navigation for Mobile Phones
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 35;
+
+    track.addEventListener('touchstart', (e) => {
+      stopAuto();
+      touchStartX = e.changedTouches[0].clientX;
+      touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    track.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = touchStartX - touchEndX;
+      const diffY = touchStartY - touchEndY;
+
+      // Only handle horizontal swipe if horizontal movement exceeds vertical scroll
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
+        if (diffX > 0) {
+          goToSlide(currentIndex + 1); // Swiped left -> next slide
+        } else {
+          goToSlide(currentIndex - 1); // Swiped right -> prev slide
+        }
+      }
+      startAuto();
+    }, { passive: true });
+
     startAuto();
   }
 
@@ -699,13 +728,15 @@
     const cityItems = document.querySelectorAll('.loc-city-item');
     const cityEl = document.getElementById('header-delivery-city');
     const mobileCityEl = document.getElementById('mobile-delivery-city');
+    const drawerCityEl = document.getElementById('drawer-delivery-city');
 
     if (!modal) return;
 
     const hasSetLocation = localStorage.getItem('supplykaro_location_set') === 'true';
     const savedCity = localStorage.getItem('supplykaro_delivery_city') || (hasSetLocation ? 'Bokaro' : 'Select Location');
     if (cityEl) cityEl.textContent = `${savedCity} ▼`;
-    if (mobileCityEl) mobileCityEl.textContent = `${savedCity} ▼`;
+    if (mobileCityEl) mobileCityEl.textContent = savedCity;
+    if (drawerCityEl) drawerCityEl.textContent = `${savedCity}, 827001`;
     const accountCityEl = document.getElementById('account-city-label');
     if (accountCityEl) accountCityEl.textContent = `Delivering to ${savedCity} ▼`;
 
@@ -724,7 +755,8 @@
 
       // Update headers
       if (cityEl) cityEl.textContent = `${city} ▼`;
-      if (mobileCityEl) mobileCityEl.textContent = `${city}${pin ? ', ' + pin : ''} ▼`;
+      if (mobileCityEl) mobileCityEl.textContent = `${city}${pin ? ', ' + pin : ''}`;
+      if (drawerCityEl) drawerCityEl.textContent = `${city}${pin ? ', ' + pin : ''}`;
       const accountCityEl = document.getElementById('account-city-label');
       if (accountCityEl) accountCityEl.textContent = `Delivering to ${city} ▼`;
 
@@ -1451,6 +1483,55 @@
     } catch (e) {}
   }
 
+  // ----------------------------------------------------------- Off-Canvas Mobile Menu Drawer
+  function initMobileMenu() {
+    const backdrop = document.getElementById('mobile-menu-backdrop');
+    const openBtn = document.getElementById('open-mobile-menu-btn');
+    const closeBtn = document.querySelector('.close-mobile-menu');
+
+    if (!backdrop) return;
+
+    function openMenu() {
+      backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    if (openBtn) {
+      openBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMenu();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeMenu);
+    }
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        closeMenu();
+      }
+    });
+
+    document.querySelectorAll('.mobile-menu-link').forEach(link => {
+      link.addEventListener('click', closeMenu);
+    });
+
+    // Global listener for auth modal triggers across mobile nav / drawer
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.open-auth-modal-btn')) {
+        e.preventDefault();
+        closeMenu();
+        window.SupplyKaro.openAuthModal();
+      }
+    });
+  }
+
   // ----------------------------------------------------------- DOM Ready
   function onReady(fn) {
     if (document.readyState === 'interactive' || document.readyState === 'complete') {
@@ -1468,6 +1549,7 @@
     initAuthModal();
     initSearchOverlay();
     initCartDrawer();
+    initMobileMenu();
     initRailScroll();
     initAuthEnhancements();
     initAdminStudioHelpers();
